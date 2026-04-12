@@ -105,7 +105,7 @@ python main.py
 
 ## WhatsApp Integration
 
-To get this agent running on WhatsApp, you would typically use a service like **Twilio**. You just need to set up a small web server (using FastAPI or Flask) with an endpoint that acts as a "webhook."
+To get this agent running on WhatsApp, you would typically use a service like **Twilio**. You just need to set up a small web server using FastAPI with an endpoint that acts as a "webhook."
 
 ### How it works:
 1. **Webhook:** You give Twilio a URL (the webhook). Whenever someone sends a message to your WhatsApp number, Twilio "POSTs" that message to your URL.
@@ -117,19 +117,13 @@ To get this agent running on WhatsApp, you would typically use a service like **
 ```python
 @app.post("/whatsapp")
 async def whatsapp_webhook(From: str = Form(...), Body: str = Form(...)):
-    # 1. Use the phone number as the unique session ID
     session_id = From 
-    
-    # 2. Pass the user message to our LangGraph state machine
     result = agent_graph.invoke(
         {"messages": [HumanMessage(content=Body)]},
         config={"configurable": {"thread_id": session_id}}
     )
-    
-    # 3. Get the latest AI message from the state
     ai_response = result["messages"][-1].content
     
-    # 4. Format the response for Twilio
     response = MessagingResponse()
     response.message(ai_response)
     
