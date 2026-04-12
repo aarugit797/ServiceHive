@@ -1,3 +1,7 @@
+
+
+https://github.com/user-attachments/assets/4c33f5c6-b88f-4b36-be48-36b43f33121c
+
 ## 🌟 Overview
 
 Aaru is an intelligent conversational agent that handles customer inquiries and captures leads seamlessly using a tightly controlled Directed Acyclic Graph (DAG) state machine. It has completely decoupled from rate-limited, paid APIs by utilizing **Groq** for lightning-fast text generation and **HuggingFace** for local embeddings.
