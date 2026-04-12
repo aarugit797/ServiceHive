@@ -48,14 +48,21 @@ python ingest.py
 # 6. Start the Streamlit application
 streamlit run app_streamlit.py
 ```
-*The app will automatically open in your browser at `http://localhost:8501`.*
+The app will automatically open in your browser at `http://localhost:8501`.
 
 ---
 
 ## 🧠 Architecture Details
 
 ### Why LangGraph?
-LangGraph's `StateGraph` was chosen over simple LangChain chains because it explicitly manages conversational state across multi-turn exchanges. The graph relies on conditional routing (`route_by_intent` & `route_after_collection`) to enforce strict guardrails — ensuring the LLM cannot arbitrarily fire tool executions or hallucinate RAG contexts.
+LangGraph's `StateGraph` was chosen over simple LangChain chains because it explicitly manages conversational state across multi-turn exchanges. The graph relies on conditional routing (`route_by_intent` & `route_after_collection`) to enforce strict guardrails ensuring the LLM cannot arbitrarily fire tool executions or hallucinate RAG contexts.
+
+### State Management
+Aaru utilizes a multi-layered state management strategy to ensure zero data loss during complex conversations:
+- **`AgentState` (TypedDict):** The central source of truth that travels through the LangGraph. it tracks message history, intent history, and the current active node.
+- **LangGraph Checkpointing (`MemorySaver`):** Provides short-term working memory. By using a `thread_id` (session ID), Aaru can resume conversations perfectly even after the user refreshes the page or pauses the chat.
+- **Pydantic Validation:** The `LeadProfile` within the state uses Pydantic to track missing fields and validation status (`name`, `email`, `platform`).
+- **SQLite Persistence:** Once a lead is "captured" by the tool executor, the data is permanently archived in a local SQLite database (`memory/leads.db`) for long-term record keeping.
 
 ### Intent Driven Routing
 Instead of an LLM guessing what to do, Aaru forces the message through a Llama-3.3 powered Intent Classifier mapped to a strict Pydantic schema. 
