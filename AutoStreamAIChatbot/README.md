@@ -1,9 +1,3 @@
-# AutoStream · Aaru — Conversational AI Agent
-
-A production-grade LangGraph AI agent for AutoStream, a fictional SaaS platform for automated video editing. Built with **Streamlit**, **LangGraph**, and **Groq Llama 3.3**.
-
----
-
 ## 🌟 Overview
 
 Aaru is an intelligent conversational agent that handles customer inquiries and captures leads seamlessly using a tightly controlled Directed Acyclic Graph (DAG) state machine. It has completely decoupled from rate-limited, paid APIs by utilizing **Groq** for lightning-fast text generation and **HuggingFace** for local embeddings.
@@ -16,7 +10,7 @@ Aaru is an intelligent conversational agent that handles customer inquiries and 
 
 ---
 
-## Getting Started
+## Setup
 
 ### Prerequisites
 - Python 3.10+
@@ -24,30 +18,31 @@ Aaru is an intelligent conversational agent that handles customer inquiries and 
 
 ### Installation
 
-```bash
+   ```bash
 # 1. Clone the repository
-git clone https://github.com/your-username/autostream-agent.git
-cd autostream-agent
+   git clone https://github.com/your-username/autostream-agent.git
+   cd autostream-agent
 
 # 2. Create and activate a virtual environment
-python -m venv venv
+   python -m venv venv
 # Windows
-venv\Scripts\activate
+   venv\Scripts\activate
 # macOS/Linux
 source venv/bin/activate
 
 # 3. Install dependencies
-pip install -r requirements.txt
+   pip install -r requirements.txt
 
 # 4. Configure environment
 echo "GROQ_API_KEY=your_groq_key_here" > .env
 
 # 5. Ingest knowledge base into ChromaDB (run once)
-python ingest.py
+   python ingest.py
 
-# 6. Start the Streamlit application
-streamlit run app_streamlit.py
-```
+6. Launch the chat UI:
+   ```bash
+   streamlit run app_streamlit.py
+   ```
 The app will automatically open in your browser at `http://localhost:8501`.
 
 ---
@@ -55,7 +50,7 @@ The app will automatically open in your browser at `http://localhost:8501`.
 ## 🧠 Architecture Details
 
 ### Why LangGraph?
-LangGraph's `StateGraph` was chosen over simple LangChain chains because it explicitly manages conversational state across multi-turn exchanges. The graph relies on conditional routing (`route_by_intent` & `route_after_collection`) to enforce strict guardrails ensuring the LLM cannot arbitrarily fire tool executions or hallucinate RAG contexts.
+LangGraph's `StateGraph` was chosen over simple LangChain chains because it explicitly manages conversational state across multi-turn exchanges. The graph relies on conditional routing `route_by_intent` & `route_after_collection` to enforce strict guardrails ensuring the LLM cannot arbitrarily fire tool executions or hallucinate RAG contexts.
 
 ### State Management
 Aaru utilizes a multi-layered state management strategy to ensure zero data loss during complex conversations:
@@ -100,8 +95,43 @@ autostream-agent/
 
 ---
 
-## 🛠️ Testing via CLI
-If you prefer not to use the Streamlit interface, you can test the pure agent pipeline directly inside your terminal context:
+## Testing via CLI
+If you don't want to use the web UI, you can test the agent logic directly in your terminal:
 ```bash
 python main.py
+```
+
+---
+
+## WhatsApp Integration
+
+To get this agent running on WhatsApp, you would typically use a service like **Twilio**. You just need to set up a small web server (using FastAPI or Flask) with an endpoint that acts as a "webhook."
+
+### How it works:
+1. **Webhook:** You give Twilio a URL (the webhook). Whenever someone sends a message to your WhatsApp number, Twilio "POSTs" that message to your URL.
+2. **Session ID:** Use the sender's phone number as the `thread_id`. This ensures each person has their own private conversation history.
+3. **Response:** Your server runs the LangGraph, gets the AI's reply, and sends it back to Twilio, which then delivers it to the user.
+
+### Pseudo Code (FastAPI + Twilio):
+
+```python
+@app.post("/whatsapp")
+async def whatsapp_webhook(From: str = Form(...), Body: str = Form(...)):
+    # 1. Use the phone number as the unique session ID
+    session_id = From 
+    
+    # 2. Pass the user message to our LangGraph state machine
+    result = agent_graph.invoke(
+        {"messages": [HumanMessage(content=Body)]},
+        config={"configurable": {"thread_id": session_id}}
+    )
+    
+    # 3. Get the latest AI message from the state
+    ai_response = result["messages"][-1].content
+    
+    # 4. Format the response for Twilio
+    response = MessagingResponse()
+    response.message(ai_response)
+    
+    return Response(content=str(response), media_type="application/xml")
 ```
